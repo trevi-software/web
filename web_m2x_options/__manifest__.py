@@ -23,4 +23,5 @@
         'static/src/xml/base.xml',
     ],
     'installable': True,
+    'auto_install': True,
 }
