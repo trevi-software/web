@@ -168,6 +168,8 @@ Known issues / Roadmap
 
 * Support extra invisible fields inside each cell.
 
+* Support kanban mode. Current behaviour forces list mode.
+
 Changelog
 =========
 
@@ -202,7 +204,7 @@ Authors
 * Therp BV
 * Tecnativa
 * Camptocamp
-* Brainbean Apps
+* CorporateHub
 
 Contributors
 ~~~~~~~~~~~~
@@ -214,7 +216,9 @@ Contributors
 * Timon Tschanz <timon.tschanz@camptocamp.com>
 * Jairo Llopis <jairo.llopis@tecnativa.com>
 * Dennis Sluijk <d.sluijk@onestein.nl>
-* Alexey Pelykh <alexey.pelykh@brainbeanapps.com>
+* `CorporateHub <https://corporatehub.eu/>`__
+
+  * Alexey Pelykh <alexey.pelykh@corphub.eu>
 
 Maintainers
 ~~~~~~~~~~~

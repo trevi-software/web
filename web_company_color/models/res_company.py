@@ -44,6 +44,47 @@ class ResCompany(models.Model):
             }
           }
         }
+        a[href],
+        a[tabindex],
+        .btn-link,
+        .o_external_button {
+          color: %(color_link_text)s !important;
+        }
+        a:hover,
+        .btn-link:hover {
+          color: %(color_link_text_hover)s !important;
+        }
+        .btn-primary:not(.disabled),
+        .ui-autocomplete .ui-menu-item.ui-state-focus a {
+          color: %(color_button_text)s !important;
+          background-color: %(color_button_bg)s !important;
+          border-color: %(color_button_bg)s !important;
+        }
+        .btn-primary:hover:not(.disabled),
+        .ui-autocomplete .ui-menu-item.ui-state-focus a:hover {
+          color: %(color_button_text)s !important;
+          background-color: %(color_button_bg_hover)s !important;
+          border-color: %(color_button_bg_hover)s !important;
+        }
+        .o_searchview .o_searchview_facet .o_searchview_facet_label {
+          color: %(color_button_text)s !important;
+          background-color: %(color_button_bg)s !important;
+        }
+        .o_form_view .o_horizontal_separator {
+          color: %(color_link_text)s !important;
+        }
+        .o_form_view .oe_button_box .oe_stat_button .o_button_icon,
+        .o_form_view .oe_button_box .oe_stat_button .o_stat_info .o_stat_value,
+        .o_form_view .oe_button_box .oe_stat_button > span .o_stat_value {
+          color: %(color_link_text)s !important;
+        }
+        .o_form_view .o_form_statusbar > .o_statusbar_status >
+        .o_arrow_button.btn-primary.disabled {
+          color: %(color_link_text)s !important;
+        }
+        .o_required_modifier.o_input, .o_required_modifier .o_input {
+          background-color: lighten(%(color_button_bg)s, 10%%) !important;
+        }
     """
 
     company_colors = fields.Serialized()
@@ -53,13 +94,23 @@ class ResCompany(models.Model):
         'Navbar Background Color Hover', sparse='company_colors')
     color_navbar_text = fields.Char('Navbar Text Color',
                                     sparse='company_colors')
+    color_button_text = fields.Char('Button Text Color',
+                                    sparse='company_colors')
+    color_button_bg = fields.Char('Button Background Color',
+                                  sparse='company_colors')
+    color_button_bg_hover = fields.Char('Button Background Color Hover',
+                                        sparse='company_colors')
+    color_link_text = fields.Char('Link Text Color',
+                                  sparse='company_colors')
+    color_link_text_hover = fields.Char('Link Text Color Hover',
+                                        sparse='company_colors')
     scss_modif_timestamp = fields.Char('SCSS Modif. Timestamp')
 
-    @api.model
-    def create(self, values):
-        record = super().create(values)
-        record.scss_create_or_update_attachment()
-        return record
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records.scss_create_or_update_attachment()
+        return records
 
     @api.multi
     def unlink(self):
@@ -76,7 +127,12 @@ class ResCompany(models.Model):
         if not self.env.context.get('ignore_company_color', False):
             fields_to_check = ('color_navbar_bg',
                                'color_navbar_bg_hover',
-                               'color_navbar_text')
+                               'color_navbar_text',
+                               'color_button_bg',
+                               'color_button_bg_hover',
+                               'color_button_text',
+                               'color_link_text',
+                               'color_link_text_hover')
             if 'logo' in values:
                 if values['logo']:
                     _r, _g, _b = image_to_rgb(convert_to_image(values['logo']))
@@ -106,12 +162,25 @@ class ResCompany(models.Model):
     @api.multi
     def _scss_get_sanitized_values(self):
         self.ensure_one()
-        values = dict(self.company_colors)
+        # Clone company_color as dictionary to avoid ORM operations
+        # This allow extend company_colors and only sanitize selected fields
+        # or add custom values
+        values = dict(self.company_colors or {})
         values.update({
-            'color_navbar_bg': values['color_navbar_bg'] or '$o-brand-odoo',
-            'color_navbar_bg_hover': values['color_navbar_bg_hover']
-            or '$o-navbar-inverse-link-hover-bg',
-            'color_navbar_text': values['color_navbar_text'] or '#FFF',
+            'color_navbar_bg': (values.get('color_navbar_bg')
+                                or '$o-brand-odoo'),
+            'color_navbar_bg_hover': (
+                values.get('color_navbar_bg_hover')
+                or '$o-navbar-inverse-link-hover-bg'),
+            'color_navbar_text': (values.get('color_navbar_text') or '#FFF'),
+            'color_button_bg': values.get('color_button_bg') or '$primary',
+            'color_button_bg_hover': values.get('color_button_bg_hover') or
+            'darken(theme-color("primary"), 10%)',
+            'color_button_text': values.get('color_button_text') or '#FFF',
+            'color_link_text': values.get('color_link_text') or
+            'theme-color("primary")',
+            'color_link_text_hover': values.get('color_link_text_hover') or
+            'darken(theme-color("primary"), 10%)',
         })
         return values
 
@@ -139,7 +208,10 @@ class ResCompany(models.Model):
     @api.multi
     def scss_create_or_update_attachment(self):
         IrAttachmentObj = self.env['ir.attachment']
-        modif_timestamp = str(int(time.time()))     # One second resolution
+        # The time window is 1 second
+        # This mean that all modifications realized in that second will
+        # have the same timestamp
+        modif_timestamp = str(int(time.time()))
         for record in self:
             datas = base64.b64encode(
                 record._scss_generate_content().encode('utf-8'))

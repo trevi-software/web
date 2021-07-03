@@ -11,6 +11,7 @@ odoo.define('web_widget_x2many_2d_matrix.widget', function (require) {
     var X2Many2dMatrixRenderer = require(
         'web_widget_x2many_2d_matrix.X2Many2dMatrixRenderer'
     );
+    var utils = require('web.utils');
 
     var WidgetX2Many2dMatrix = relational_fields.FieldOne2Many.extend({
         widget_class: 'o_form_field_x2many_2d_matrix',
@@ -34,19 +35,22 @@ odoo.define('web_widget_x2many_2d_matrix.widget', function (require) {
          */
         init_params: function () {
             var node = this.attrs;
-            this.by_x_axis = {};
             this.by_y_axis = {};
+            this.x_axis = [];
+            this.y_axis = [];
             this.field_x_axis = node.field_x_axis || this.field_x_axis;
             this.field_y_axis = node.field_y_axis || this.field_y_axis;
             this.field_label_x_axis =
                 node.field_label_x_axis || this.field_x_axis;
             this.field_label_y_axis =
                 node.field_label_y_axis || this.field_y_axis;
-            this.x_axis_clickable = this.parse_boolean(
-                node.x_axis_clickable || '1'
+            this.x_axis_clickable = utils.toBoolElse(
+                node.x_axis_clickable,
+                true
             );
-            this.y_axis_clickable = this.parse_boolean(
-                node.y_axis_clickable || '1'
+            this.y_axis_clickable = utils.toBoolElse(
+                node.y_axis_clickable,
+                true
             );
             this.field_value = node.field_value || this.field_value;
             // TODO: is this really needed? Holger?
@@ -56,10 +60,25 @@ odoo.define('web_widget_x2many_2d_matrix.widget', function (require) {
                         node[property];
                 }
             }
-            this.show_row_totals =
-                this.parse_boolean(node.show_row_totals || '1');
-            this.show_column_totals =
-                this.parse_boolean(node.show_column_totals || '1');
+            var field_defs = this.recordData[this.name].fields;
+            // TODO: raise when any of the fields above don't exist with a
+            // helpful error message
+            if (!field_defs[this.field_value]) {
+                throw new Error(_.str.sprintf(
+                    'You need to include %s in your view definition',
+                    this.field_value
+                ));
+            }
+            this.show_row_totals = utils.toBoolElse(
+                node.show_row_totals ||
+                this.is_aggregatable(field_defs[this.field_value]),
+                false
+            );
+            this.show_column_totals = utils.toBoolElse(
+                node.show_column_totals ||
+                this.is_aggregatable(field_defs[this.field_value]),
+                false
+            );
         },
 
         /**
@@ -71,8 +90,9 @@ odoo.define('web_widget_x2many_2d_matrix.widget', function (require) {
         init_matrix: function () {
             var records = this.recordData[this.name].data;
             // Wipe the content if something still exists
-            this.by_x_axis = {};
             this.by_y_axis = {};
+            this.x_axis = [];
+            this.y_axis = [];
             _.each(records, function (record) {
                 var x = record.data[this.field_x_axis],
                     y = record.data[this.field_y_axis];
@@ -84,18 +104,22 @@ odoo.define('web_widget_x2many_2d_matrix.widget', function (require) {
                     // We have a related record
                     y = y.data.display_name;
                 }
-                this.by_x_axis[x] = this.by_x_axis[x] || {};
                 this.by_y_axis[y] = this.by_y_axis[y] || {};
-                this.by_x_axis[x][y] = record;
                 this.by_y_axis[y][x] = record;
+                if (this.y_axis.indexOf(y) === -1) {
+                    this.y_axis.push(y);
+                }
+                if (this.x_axis.indexOf(x) === -1) {
+                    this.x_axis.push(x);
+                }
             }.bind(this));
             // Init columns
             this.columns = [];
-            $.each(this.by_x_axis, function (x) {
+            _.each(this.x_axis, function (x) {
                 this.columns.push(this._make_column(x));
             }.bind(this));
             this.rows = [];
-            $.each(this.by_y_axis, function (y) {
+            _.each(this.y_axis, function (y) {
                 this.rows.push(this._make_row(y));
             }.bind(this));
             this.matrix_data = {
@@ -143,23 +167,17 @@ odoo.define('web_widget_x2many_2d_matrix.widget', function (require) {
                 },
                 'data': [],
             };
-            $.each(self.by_x_axis, function (x) {
+            _.each(self.x_axis, function (x) {
                 row.data.push(self.by_y_axis[y][x]);
             });
             return row;
         },
 
         /**
-         * Parse a String containing a bool and convert it to a JS bool.
-         *
-         * @param {String} val: the string to be parsed.
-         * @returns {Boolean} The parsed boolean.
+         * Determine if a field represented by field_def can be aggregated
          */
-        parse_boolean: function (val) {
-            if (val.toLowerCase() === 'true' || val === '1') {
-                return true;
-            }
-            return false;
+        is_aggregatable: function (field_def) {
+            return field_def.type in { float: 1, monetary: 1, integer: 1 };
         },
 
         /**

@@ -75,3 +75,13 @@ Features for computers:
 * Followers and send button is displayed on mobile. Avatar is hidden.
 
   .. image:: ../static/img/chatter.gif
+
+* When the chatter is configured on the side part, the document viewer fills that
+  part for side-by-side reading instead of full screen. You can still put it on full
+  width preview clicking on the new maximize button.
+
+  .. image:: ../static/img/document_viewer.gif
+
+* Bigger checkboxes in list view
+
+  .. image:: ../static/img/big_checkboxes.gif
