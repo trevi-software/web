@@ -8,5 +8,5 @@
     "qweb": ["static/src/xml/refresher.xml"],
     "depends": ["web"],
     "installable": True,
-    "auto_install": False,
+    "auto_install": True,
 }

@@ -21,4 +21,5 @@
     "qweb": ["static/src/xml/web_dialog_size.xml"],
     "data": ["templates/assets.xml"],
     "installable": True,
+    "auto_install": True,
 }
