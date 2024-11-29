@@ -13,4 +13,5 @@
     "depends": ["web"],
     "qweb": ["static/src/xml/expand_buttons.xml"],
     "data": ["views/templates.xml"],
+    "auto_install": True,
 }

@@ -15,6 +15,6 @@
     "license": "AGPL-3",
     "depends": ["web"],
     "data": ["data/ribbon_data.xml", "view/base_view.xml"],
-    "auto_install": False,
+    "auto_install": True,
     "installable": True,
 }

@@ -17,5 +17,6 @@
         "static/src/xml/web_advanced_search.xml",
     ],
     "installable": True,
+    "auto_install": True,
     "application": False,
 }
